@@ -1,0 +1,17 @@
+[package]
+name = "gsync"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = [
+    "crates/gauth",
+    "crates/gcalendar",
+    "crates/gdrive"
+]
+
+[dependencies]
+tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros", "fs", "io-std", "io-util"] }
+gauth = { path = "crates/gauth" }
+gcalendar = { path = "crates/gcalendar" }
+gdrive = { path = "crates/gdrive" }
