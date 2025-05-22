@@ -1,6 +1,6 @@
-use gauth::test_fn;
+use gauth::{get_refresh_token};
 
 #[tokio::main]
 async fn main() {
-    test_fn().await;
+    get_refresh_token("").await.unwrap();
 }

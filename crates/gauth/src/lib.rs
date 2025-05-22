@@ -3,17 +3,16 @@ use reqwest::{self, Client};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use config::*;
+use errors::Errors;
 
 mod config;
+mod errors;
 
 pub async fn test_fn() {
     config::load_config().await.unwrap();
 }
 
-// TODO: Make getting data from config
-// TODO: Error handling
-
-pub async fn get_auth_token() -> Result<String, std::io::Error> {
+pub async fn get_auth_token() -> Result<String, Errors> {
 
     println!("https://accounts.google.com/o/oauth2/auth?client_id={}&redirect_uri=http://localhost&response_type=code&scope=https://www.googleapis.com/auth/drive&access_type=offline", 1);
 
@@ -39,33 +38,29 @@ pub struct RefreshTokenOutput {
     token_type: String 
 }
 
-pub async fn get_refresh_token(code: &str, client_id: &str) -> Result<RefreshTokenOutput, std::io::Error> {
+pub async fn get_refresh_token(code: &str) -> Result<RefreshTokenOutput, Errors> {
     let client = Client::new();
+    let config = load_config().await?;
 
-    println!("Write client secret:");
-
-    let stdin = io::stdin();
-    let mut reader = BufReader::new(stdin);
-    let mut data = String::new();
-    let bytes = reader.read_line(&mut data).await?;
-    if bytes == 0 {
-        println!("EOF")
+    if config.client_id.is_empty() || config.client_secret.is_empty() {
+        println!("Please add the client secret/ID to the configuration.");
+        return Err(Errors::EmptyField())
     }
 
     let data = json!({
         "code": code,
-        "client_id": client_id,
-        "client_secret": data.trim(),
+        "client_id": config.client_id,
+        "client_secret": config.client_secret,
         "redirect_uri": "http://localhost",
         "grant_type": "authorization_code"
     });
 
     let request = client.post("https://oauth2.googleapis.com/token")
         .form(&data)
-        .send().await.unwrap()
-        .text().await.unwrap(); // remove unwrap   
+        .send().await?
+        .text().await?;
 
-    let parsestruct: RefreshTokenOutput = serde_json::from_str(&request).unwrap();
+    let parsestruct: RefreshTokenOutput = serde_json::from_str(&request)?;
 
     Ok(parsestruct)
 }
